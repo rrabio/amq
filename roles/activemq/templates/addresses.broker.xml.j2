@@ -5,7 +5,14 @@
                 max-consumers="{{ queue['max_consumers'] | default('-1') }}" 
                 exclusive="{{ queue['exclusive'] | default('false') | lower }}" 
                 consumers-before-dispatch="{{ queue['consumers_before_dispatch'] | default('0') }}"
-                delay-before-dispatch="{{ queue['delay_before_dispatch'] | default('-1') }}">
+                delay-before-dispatch="{{ queue['delay_before_dispatch'] | default('-1') }}"
+                
+              {% if queue['ring_size'] is defined %}
+               ring-size="{{ queue['ring_size'] }}"
+               {% endif %}
+                
+                
+                >
 {% if queue['filter'] is defined %}           <filter string="{{ queue['filter'] }}"/>{% endif %}
            <durable>{{ queue['durable'] | default('true') | lower }}</durable>
          </queue>
