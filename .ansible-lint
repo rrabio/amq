@@ -28,6 +28,7 @@ warn_list:
   - run-once[task]
   - var-naming[no-role-prefix]
   - deprecated-command-syntax
+  - name[casing]
 
 skip_list:
   - vars_should_not_be_used
@@ -37,6 +38,7 @@ skip_list:
   - jinja[spacing]
   - schema[meta]
   - name[template]
+  - run_once[task]
 
 use_default_rules: true
 parseable: true

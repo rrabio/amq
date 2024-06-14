@@ -5,6 +5,7 @@ on:
     branches:
       - main
   pull_request:
+  workflow_dispatch:
   schedule:
     - cron: '0 6 * * *'
 
@@ -15,4 +16,4 @@ jobs:
     with:
       fqcn: 'middleware_automation/amq'
       molecule_tests: >-
-        [ "default", "static_cluster", "amq_upgrade", "mask_passwords" ]
+        [ "default", "static_cluster", "amq_upgrade", "mask_passwords", "custom_xml" ]

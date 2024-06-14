@@ -2,7 +2,7 @@ argument_specs:
     main:
         options:
             activemq_version:
-                default: "2.28.0"
+                default: "2.32.0"
                 description: "Apache Artemis version"
                 type: "str"
             activemq_archive:
@@ -17,6 +17,10 @@ argument_specs:
                 default: "{{ activemq_dest }}/apache-artemis-{{ activemq_version }}"
                 description: "Apache Artemis Installation path"
                 type: "str"
+            activemq_install_extract_require_privilege_escalation:
+                default: yes
+                description: "Whether or not the extraction of the archive requires privilege escalation"
+                type: "bool"
             activemq_service_user_home:
                 default: "{{ activemq_dest }}/apache-artemis-{{ activemq_version }}"
                 description: "Service user home directory, defaults to artemis installation directory"
@@ -120,8 +124,13 @@ argument_specs:
                 type: "str"
             activemq_java_opts:
                 # line 37 of defaults/main.yml
-                default: "-Xms512M -Xmx2G -XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication -Dhawtio.disableProxy=true -Dhawtio.realm=activemq -Dhawtio.offline=true -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal -Djolokia.policyLocation=${ARTEMIS_INSTANCE_ETC_URI}jolokia-access.xml "
-                description: "Additional JVM options for the service"
+                default: "{{ [ activemq_java_opts_mem, activemq_java_opts_gc, activemq_java_opts_hawtio,
+                             '-Djolokia.policyLocation=file:' + activemq_dest + '/' + activemq_instance_name + '/etc/jolokia-access.xml',
+                             '-Dlog4j.configurationFile=' + activemq_logger_config_template if activemq_logger_config_template != 'log4j2.properties' and activemq_logger_config_template != 'logging.properties' else '',
+                             activemq_java_opts_extra | default('') ] | join(' ') }}"
+                description: >
+                  Arguments for the service JVM; you can override this parameter that will take precedence, or
+                  otherwise use the activemq_java_opts_* parameters
                 type: "str"
             activemq_port:
                 # line 38 of defaults/main.yml
@@ -539,19 +548,33 @@ argument_specs:
                 default: "[]"
                 type: 'list'
             activemq_broker_connections:
-                description: "AMQP broker connections configuration; list of `{ name(str),uri(str),operations(list of dicts with type key in [mirror,sender,receiver,peer])) }`"
+                description: >
+                  AMQP broker connections configuration; list of `{ name(str), uri(str), operations(list of dicts with type key in [mirror,
+                  sender,receiver,peer])) }`
                 default: "[]"
                 type: "list"
             activemq_logger_config_template:
                 description: "Template to use for logging facility configuration"
-                default: "{{ 'log4j2.properties' if activemq_version is version_compare('2.27.0', '>=') else 'logging.properties' }}"
+                default: "{{ 'log4j2.properties' if activemq_version is version_compare('2.27.0', '>=') else 'logging.properties' }}.j2"
                 type: "str"
+            activemq_logger_config_template_path:
+                description: "Optional subdirectory of any playbook template lookup directories for the logging facility configuration"
+                default: ''
+                type: "str"
+            activemq_logger_config_keep_name:
+                description: "Whether to keep the custom template filename or use the default"
+                default: False
+                type: "bool"
             activemq_global_max_messages:
-                description: "Number of messages before all addresses will enter into their Full Policy configured. It works in conjunction with global-activemq_global_max_size-size, being whatever value hits its maximum first."
+                description: >
+                  Number of messages before all addresses will enter into their Full Policy configured. It works in conjunction with
+                  global-activemq_global_max_size-size, being whatever value hits its maximum first.
                 default: -1
                 type: 'int'
             activemq_global_max_size:
-                description: "Size (in bytes) before all addresses will enter into their Full Policy configured upon messages being produced. Supports byte notation like 'K', 'Mb', 'MiB', 'GB', etc."
+                description: >
+                  Size (in bytes) before all addresses will enter into their Full Policy configured upon messages being produced.
+                  Supports byte notation like 'K', 'Mb', 'MiB', 'GB', etc.
                 default: '-1'
                 type: "str"
             activemq_logger_rollover_files:
@@ -563,7 +586,9 @@ argument_specs:
                 default: 5
                 type: 'int'
             activemq_password_codec:
-                description: "Fully qualified class name and its parameters for the Decoder used to decode the masked password, ignored if activemq_mask_password is false"
+                description: >
+                  Fully qualified class name and its parameters for the Decoder used to decode the masked password,
+                  ignored if activemq_mask_password is false
                 default: 'org.apache.activemq.artemis.utils.DefaultSensitiveStringCodec'
                 type: "str"
             activemq_mask_password:
@@ -650,10 +675,26 @@ argument_specs:
                 description: "Location of JAAS login.config template; by default use template provided with activemq_hawtio_role"
                 default: "login.config.j2"
                 type: "str"
+            activemq_java_opts_extra:
+                description: "Arbitrary extra arguments for the JVM"
+                default: ""
+                type: "str"
+            activemq_java_opts_mem:
+                description: "Memory arguments for the JVM"
+                default: "-Xms512M -Xmx2G"
+                type: "str"
+            activemq_java_opts_gc:
+                description: "Garbage collection arguments for the JVM"
+                default: "-XX:+PrintClassHistogram -XX:+UseG1GC -XX:+UseStringDeduplication"
+                type: "str"
+            activemq_java_opts_hawtio:
+                description: "Arbitrary extra arguments for the JVM"
+                default: "-Dhawtio.disableProxy=true -Dhawtio.realm=activemq -Dhawtio.offline=true -Dhawtio.rolePrincipalClasses=org.apache.activemq.artemis.spi.core.security.jaas.RolePrincipal"
+                type: "str"
     downstream:
         options:
             amq_broker_version:
-                default: "7.11.1"
+                default: "7.11.6"
                 description: "Red Hat AMQ Broker version"
                 type: "str"
             amq_broker_product_category:
@@ -692,5 +733,5 @@ argument_specs:
                 type: "str"
             amq_broker_logger_config_template:
                 description: "Template to use for logging facility configuration"
-                default: "{{ 'log4j2.properties' if amq_broker_version is version_compare('7.11.0', '>=') else 'logging.properties' }}"
+                default: "{{ 'log4j2.properties' if amq_broker_version is version_compare('7.11.0', '>=') else 'logging.properties' }}.j2"
                 type: "str"
