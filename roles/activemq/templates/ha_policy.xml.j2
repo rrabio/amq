@@ -21,4 +21,18 @@
           </master>
 {% endif %}
         </shared-store>
+{% elif activemq_replicate %}
+        {% if activemq_ha_role == 'slave' %}
+          <replication>
+            <slave>
+              <allow-failback>true</allow-failback>
+            </slave>
+          </replication>
+        {% else %}
+          <replication>
+            <master>
+              <check-for-live-server>true</check-for-live-server>
+            </master>
+          </replication>
+        {% endif %}
 {% endif %}
