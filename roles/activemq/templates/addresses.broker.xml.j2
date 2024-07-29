@@ -2,6 +2,7 @@
 {% if address['anycast'] is defined %}         <anycast>
 {% for queue in address['anycast'] %}
          <queue name="{{ queue.name }}" 
+                ring-size="{{ queue['ring_size'] | default('-1') }}" 
                 max-consumers="{{ queue['max_consumers'] | default('-1') }}" 
                 exclusive="{{ queue['exclusive'] | default('false') | lower }}" 
                 consumers-before-dispatch="{{ queue['consumers_before_dispatch'] | default('0') }}"
@@ -14,6 +15,7 @@
 {% if address['multicast'] is defined %}         <multicast>
 {% for queue in address['multicast'] %}
          <queue name="{{ queue.name }}" 
+                ring-size="{{ queue['ring_size'] | default('-1') }}" 
                 max-consumers="{{ queue['max_consumers'] | default('-1') }}" 
                 exclusive="{{ queue['exclusive'] | default('false') | lower }}" 
                 consumers-before-dispatch="{{ queue['consumers_before_dispatch'] | default('0') }}"
